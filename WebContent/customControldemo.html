@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Insert title here</title>
+
+<script id="sap-ui-bootstrap"
+   src="resources/sap-ui-core.js"
+   data-sap-ui-theme="sap_bluecrystal"
+   data-sap-ui-libs="sap.ui.commons">
+</script>
+
+
+</head>
+<body>
+<style>
+.autoCompleteValueHolder_valueLayout {
+	border-radius: 12px;
+	border-width: 1px;
+	border-style: solid;
+	border-color: #bbbbbb;
+	padding-left: 4px;
+	padding-right: 5px;
+	padding-bottom: 0px;
+	height: 16px;
+	margin-top: 2px;
+	margin-bottom: 2px;
+	margin-left: 2px;
+}
+
+.autoCompleteValueHolder_valuesLayout {
+	background-color: #ffffff;	
+	padding-left: 3px;
+	box-sizing: border-box;
+	-moz-box-sizing: border-box;
+	border: 1px solid #bfbfbf;
+	-webkit-border-radius: 0;
+	background: #ffffff;
+	overflow:hidden;	
+	width: 100%
+}
+
+.autoCompleteValueHolder_valueImage {
+	padding: 1px 2px 0px 0px;
+}
+
+.autoCompleteValueHolder_valueField {
+	padding: 0px 0px 0px 0px;
+	background: transparent;
+	border-width: 0px;
+	font-size: 10px;
+	margin-top: -4px;
+	margin-left: 3px;
+}
+
+.autoCompleteValueHolder_valueFieldDiv {
+	width: 100px;
+	height: 20px;
+	overflow-x: hidden;
+	overflow-y: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	padding-top: 3px;
+}
+
+.autoCompleteValueHolder_search {
+	border-width: 0px;
+	height: 19px;
+} 
+
+
+
+
+ .itemImage {margin:10px; height:50px; width:50px; float: left;}
+        .itemContainer {float: left; margin-right: 40px}
+        .itemTitle {margin:10px;}
+        .itemDescription {margin:10px;}
+        .itemPrice {float: left; margin:10px; margin-right: 30px}
+        .itemNum {float: left; margin:10px;}
+        .itemClaim{float:left; margin:10px;}
+        .orderSum{margin-top: 10px;}
+        .confirmReceive {margin-top:10px;}
+</style>
+
+<script>
+	sap.ui.localResources("customControls");
+	jQuery.sap.require("customControls.AutocompleteValueholder");
+	
+	
+	
+	
+	var aData = [{user_id:"001",email:"anfi@gmail.com"},
+	             {user_id:"002",email:"ahdf@gmail.com"},
+	             {user_id:"003",email:"adffji@gmail.com"},
+	             {user_id:"004",email:"abnfi@gmail.com"},
+	             {user_id:"005",email:"acnfi@gmail.com"},
+	             {user_id:"006",email:"aefi@gmail.com"},
+	             {user_id:"007",email:"syaojia@gmail.com"},
+	             {user_id:"008",email:"jiamu0905@hotmail.com"}];
+	
+	var oModel = new sap.ui.model.json.JSONModel();
+	
+	oModel.setData({contacts:aData});
+	
+	var acvh = new AutocompleteValueholder({
+		codePropertyName:"user_id",
+		descriptionPropertyName:"email",
+		model:oModel,
+		path:"/contacts",
+		
+		
+	});
+	
+	acvh.placeAt("root");
+	jQuery.sap.require("customControls.CustomerOrder");
+	
+	var aOrders = [{article:"Wilson Blade 16*19", additionalText:"very nice racket with good stability and spin potentials",price:159,num:1},
+	               {article:"Wilson Blade 16*19", additionalText:"very nice racket with good stability and spin potentials",price:159,num:1},
+	               {article:"Wilson Blade 16*19", additionalText:"very nice racket with good stability and spin potentials",price:159,num:1},
+	               {article:"Wilson Blade 16*19", additionalText:"very nice racket with good stability and spin potentials",price:159,num:1},
+	               {article:"Wilson Blade 16*19", additionalText:"very nice racket with good stability and spin potentials",price:159,num:1}];
+
+	
+	var oOrderModel = new sap.ui.model.json.JSONModel();
+	oOrderModel.setData(aOrders);
+	
+	var myOrder = new sap.ui.custom.CustomerOrderList({
+		oId: "sdfdf",
+		vendorName:"Andy",
+		vendorID:"D510047",
+		orderDate:"2015-7-16",
+		sum:"1000",		
+		items:{
+			path:"/",
+			template: new CustListItem({
+				price:"{price}",
+				num:"{num}",
+				article:"{article}",
+				additionalText:"{additionalText}"
+			})
+		}
+	});
+	
+	myOrder.setModel(oOrderModel);
+	
+	myOrder.placeAt("root");
+	
+	jQuery.sap.require("customControls/ArticleTemplate");
+	
+	var articleItem = new sap.ui.custom.ArticleTemplate({
+		articleTags:["Kids","Sales"]
+	});
+	articleItem.placeAt("root");
+	
+	
+</script>
+
+<div id="root"></div>
+
+</body>
+</html>

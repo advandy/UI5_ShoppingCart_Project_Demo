@@ -1,0 +1,1154 @@
+<!DOCTYPE html >
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+	<head>
+		<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+		<meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0,  user-scalable=yes" />
+		<title>OpenUI5 SDK - Demo Kit</title>
+		<link type="image/x-icon" href="resources/sap/ui/core/mimes/logo/txtonly_16x16.ico" rel="shortcut icon" />
+		<link type="image/x-icon" href="resources/sap/ui/core/mimes/logo/txtonly_16x16.ico" rel="icon" />
+
+<script id="sap-ui-bootstrap"
+   src="resources/sap-ui-core.js"
+   data-sap-ui-theme="sap_bluecrystal"
+   data-sap-ui-libs="sap.ui.commons,sap.ui.unified,sap.ui.ux3,sap.m,sap.ui.table, sap.ui.layout">
+</script>
+
+<script src="customControls/sap.ui.custom.itemLayout.js"></script>
+
+		<!-- the dynamic-mode-check script distinguishes between a static mode where no search is available   -->
+		<!-- and a rich mode where a backend provides search results. The default version of the file handles -->
+		<!-- the rich mode. it is replaced with a static mode version during the lightening build             -->
+		
+<style>
+        .itemImage {margin:10px; height:70px; float: left;}
+        .itemContainer {float: left; margin-right: 40px}
+        .itemTitle {margin:10px;}
+        .itemDescription {margin:10px;}
+        .itemPrice {float: left; margin:10px; margin-right: 30px}
+        .itemNum {float: left; margin:10px;}
+        .itemClaim{float:left; margin:10px;}
+        .orderSum{margin-top: 10px;}
+        .confirmReceive {margin-top:10px;}
+
+</style>
+		<script>
+jQuery.sap.require("sap.ui.core.IconPool");
+
+
+var c = sap.ui.commons;
+
+var oItemlyt =  new sapUiCustomItemLayout({
+    link: new c.Link({text: "test linke"}),
+    image: new c.Image({src:"images/Notebook.png"}),     
+    form: new c.form.Form({
+        width: "100%",
+        layout: new c.form.GridLayout(),
+        formContainers: [
+            new c.form.FormContainer({
+                formElements: [
+                    new c.form.FormElement({
+                        label: new c.Label({
+                            text: "Category",
+                            layoutData: new c.form.GridElementData({hCells: "5"})}),
+                            
+                        fields: [new c.TextField({value: "test category", editable: false})]
+                    }),
+                    new c.form.FormElement({
+                        label: new c.Label({text: "Price", layoutData: new c.form.GridElementData({hCells: "5"})}),
+                        fields: [new c.TextField({value: "test price", editable: false})]
+                    }),
+                    new c.form.FormElement({
+                        label: new c.Label({text: "Rating", layoutData: new c.form.GridElementData({hCells: "5"})}),
+                        fields: [new c.RatingIndicator({value: 5, editable: false})]
+                    }),
+
+                    new c.form.FormElement({       
+                        label: new sap.m.Label({layoutData: new sap.ui.commons.form.GridElementData({hCells: "5"})}),
+                        
+
+                        
+                    })                  
+
+                ]
+                    })
+                ]
+            })
+        
+    });
+
+
+
+oItemlyt.placeAt("ctrRoot");
+
+
+sap.ui.core.ListItem.extend("CustListItem",{
+    metadata:{
+        properties:{
+            price: "string",
+            num:"string",
+            article:"string",
+        }
+    }
+});
+		    
+            //Create a custom control as template for the Dataset items 
+sap.ui.core.Control.extend("ItemLayout", {
+    metadata : {
+        aggregations : {
+            "link" : {type : "sap.ui.commons.Link", multiple : false},
+            "image" : {type : "sap.ui.commons.Image", multiple : false},
+            "form" : {type : "sap.ui.commons.form.Form", multiple : false},
+        }
+    },
+
+    renderer: function(rm, ctrl){
+        rm.write("<div");
+        rm.writeControlData(ctrl);
+        rm.writeAttribute("class", "CustomItemLayout");
+        rm.write("><div");
+        rm.writeAttribute("class", "CustomItemLayoutInner");
+        rm.write("><div");
+        rm.writeAttribute("class", "CustomItemLayoutTitle");
+        rm.write(">");
+        rm.renderControl(ctrl.getImage());
+        rm.write("<div>");
+        rm.renderControl(ctrl.getLink());
+        rm.write("</div></div><div");
+        rm.writeAttribute("class", "CustomItemLayoutCntnt");
+        rm.write(">");
+        rm.renderControl(ctrl.getForm());
+        rm.write("</div></div></div>");
+    },
+    
+    onBeforeRendering : function(){
+        if(this.resizeTimer){
+            clearTimeout(this.resizeTimer);
+            this.resizeTimer = null;
+        }
+    },
+    
+    onAfterRendering : function(){
+        var $This = this.$();
+        if($This.parent().parent().hasClass("sapUiUx3DSSVSingleRow")){
+            this._resize();
+        }else{
+            $This.addClass("CustomItemLayoutSmall");
+        }
+    },
+    
+    _resize: function(){
+        if(!this.getDomRef()){
+            return;
+        }
+        var $This = this.$();
+        if($This.outerWidth() >= 440){
+            $This.removeClass("CustomItemLayoutSmall").addClass("CustomItemLayoutLarge");
+        }else{
+            $This.removeClass("CustomItemLayoutLarge").addClass("CustomItemLayoutSmall");
+        }
+        setTimeout(jQuery.proxy(this._resize, this), 300);
+    }
+});
+
+//Initialize the example data and the model
+var oTab1Data = [];
+var shoppingCart=[];
+var aTitles = ["Notebook Basic", "UMTS PDA", "Easy Hand", "Deskjet Super Highspeed",
+               "Copperberry Cellphone", "Notebook LCD Display", "PC Power Station",
+               "Gaming Monster Pro", "ITelO FlexTop I4000", "ITelO FlexTop I6300c",
+               "Goldberry Cellphone", "ITelO FlexTop I9100", "Notebook Professional",
+               "Smart Office", "Deskjet Super Highspeed", "Notebook Basic XS"];
+for(var i=0; i<aTitles.length; i++){
+    var sTitle = aTitles[i];
+    
+    var oProduct = {id: ""+i, price: Math.floor((Math.random()*1000))+1+" $", category: "PC",
+            title: sTitle, rating: Math.floor((Math.random()*5))+1};
+    
+    oProduct.image = "images/Notebook.png"
+   
+    
+    oTab1Data.push(oProduct);
+}
+
+
+
+
+sap.ui.core.Icon.extend("CartIcon",{
+    metadata:{
+        properties:{
+            "item":"string",
+            "price":"string"
+        }
+    },
+    onclick: function(oEvent){
+            var article = this.getItem();
+           var price = this.getPrice();
+           var buy = {};
+           buy.item = article;
+           buy.price = price;
+           shoppingCart.push(buy);
+           var oModel = new sap.ui.model.json.JSONModel();
+            oModel.setData({oModelData:shoppingCart});
+            oShoppingCartTable.setModel(oModel);
+            oShoppingCartTable.bindRows("/oModelData");
+           oShoppingCartTable.rerender();
+           sap.ui.getCore().byId("nextBtn").setEnabled(true);
+           alert(article+" "+price+" is added to cart");
+    },
+    renderer: {}
+});
+
+
+
+
+
+sap.ui.core.Control.extend("order",{
+    metadata:{
+        properties:{
+            "number": "int",
+            "orderID": "string",
+            "vendorName":"string",
+            "vendorID":"string",
+            "orderDate":"string",
+            "sum": "string",
+            
+
+
+        },
+
+        aggregations:{
+            "items" : "CustListItem",
+            "buttonCheck": "sap.ui.commons.Button"
+            
+        }
+    },
+
+    renderer: function(oRm, oControl){
+        oRm.write("<div");
+        oRm.writeControlData(oControl);
+        oRm.addClass("order");
+        oRm.writeClasses();
+        oRm.addStyle("width","1000px");  
+        oRm.addStyle("height", (oControl.getNumber()*100+50).toString()+"px"); 
+        oRm.addStyle("margin","10px");      
+        oRm.writeStyles();
+
+        oRm.write(">");
+
+        oRm.write("<div");
+        oRm.addClass("orderTitle");
+        oRm.writeClasses();
+        oRm.addStyle("background-color","   #E0FFFF");
+        oRm.addStyle("width","100%");   
+        oRm.addStyle("height","25px");
+        
+        oRm.writeStyles();
+        oRm.write(">");
+
+        oRm.write("<div class='cb' style='float:left; margin-left:10px; width:5%'>");
+        
+        oRm.renderControl(new sap.ui.commons.CheckBox());  
+
+        oRm.write("</div>");
+
+        oRm.write("<div class='orderDate' style='float:left; margin-top:2px; width:10%'>");
+        oRm.renderControl(new sap.ui.commons.Label({
+            text: oControl.getOrderDate()+" "
+        })) ;      
+        oRm.write("</div>");
+
+        oRm.write("<div class='orderID'style='float:left ; margin-top:2px; width:30%'>");
+        oRm.renderControl(new sap.ui.commons.Label({
+            text: "Order ID: "+ oControl.getOrderID()+" "
+        })) ;
+        
+        oRm.write("</div>");
+
+
+        oRm.write("<div class='vendorName'style='float:left ; margin-top:2px; width:20%'>");
+        oRm.renderControl(new sap.ui.commons.Label({
+            text: "Vendor: "+ oControl.getVendorName()+" "
+        })) ;
+
+        oRm.write("</div>");
+
+        oRm.write("<div class='vendorID'style='float:left; margin-top:2px;  width:30%'>");
+       
+        oRm.renderControl(new sap.ui.commons.Label({
+            text: "("+ oControl.getVendorID()+") "
+        })) ;
+        oRm.write("</div>");
+
+        oRm.write("</div>");
+
+        oRm.write("<div");
+        oRm.addClass("itemLists");
+        oRm.writeClasses();
+        oRm.addStyle("float","left");
+        oRm.addStyle("width","700px");
+        oRm.writeStyles();
+        oRm.write(">");
+
+        for(var i=0; i<oControl.getNumber(); i++){
+        oRm.write("<div");
+        oRm.addClass("item");
+        oRm.writeClasses();
+        oRm.addStyle("border-left","1px solid   #E0FFFF");
+        oRm.addStyle("border-bottom","1px solid     #E0FFFF");
+        oRm.addStyle("width","100%");
+        //oRm.addStyle("padding","20px");
+        oRm.addStyle("height","100px");
+        oRm.writeStyles();
+        oRm.write(">");
+
+        oRm.write("<div class='itemImage'>");
+
+        var oImage = new sap.ui.commons.Image();        
+        oImage.setSrc("images/wilson-tennisschlaeger-blade-98s-18x16-herren_00703002911000_500-500_90_2.jpg");
+        oImage.setHeight("80px");
+        oRm.renderControl(oImage);
+        oRm.write("</div>");
+
+        oRm.write("<div class='itemContainer'>");
+        
+        oRm.write("<div class='itemTitle'>");
+        var oInput = new sap.ui.commons.Label();
+        oInput.setText(oControl.getItems()[i].getArticle());
+        oInput.setWrapping(true);
+        oInput.setWidth("200px");
+        
+        oRm.renderControl(oInput);
+        oRm.write("</div>");
+
+        oRm.write("<div class='itemDescription'>");
+        var oInput2 = new sap.ui.commons.TextView();
+        oInput2.setText(oControl.getItems()[i].getAdditionalText());
+        oInput2.setWrapping(false);
+        oInput2.setWidth("200px");        
+
+        oRm.renderControl(oInput2);
+        
+        oRm.write("</div>");
+         oRm.write("</div>")
+
+
+        oRm.write("<div class='itemPrice'>");
+        var oInput3 = new sap.ui.commons.Label();
+        oInput3.setText(oControl.getItems()[i].getPrice());
+        oInput3.setWrapping(true);
+        oInput3.setWidth("50px");        
+
+        oRm.renderControl(oInput3);
+        
+        oRm.write("</div>");
+
+
+        oRm.write("<div class='itemNum'>");
+        var oInput3 = new sap.ui.commons.Label();
+        oInput3.setText(oControl.getItems()[i].getNum());
+        oInput3.setWrapping(true);
+        oInput3.setWidth("50px");        
+
+        oRm.renderControl(oInput3);
+        
+        oRm.write("</div>");
+
+        oRm.write("<div class='itemClaim'>");
+
+        oRm.write("<div class='retour'>");
+        var oInput3 = new sap.ui.commons.Label(
+            
+            
+        );
+        oInput3.setText("Retour/Change");
+        oInput3.setWrapping(true);
+        
+               
+
+        oRm.renderControl(oInput3);
+        oRm.write("</div>");
+
+
+        oRm.write("<div class='complaint'>");
+        var oInput4 = new sap.ui.commons.Label();
+        oInput4.setText("complaint");
+        oInput4.setWrapping(true);
+        oRm.renderControl(oInput4);
+        oRm.write("</div>");
+        
+        oRm.write("</div>");
+
+        oRm.write("</div>");
+        }
+
+        oRm.write("</div>");
+
+        oRm.write("<div text-align='center'");
+        oRm.addClass("status");
+        oRm.writeClasses();
+        oRm.addStyle("border-left","1px solid   #E0FFFF");
+        oRm.addStyle("border-bottom","1px solid     #E0FFFF");
+        oRm.addStyle("width","148px");
+        oRm.addStyle("height",((oControl.getNumber()-1)*1 + oControl.getNumber()*100).toString()+"px");
+        oRm.addStyle("float","left");
+        oRm.writeStyles();       
+        oRm.write(">");
+
+        oRm.write("<div class='orderSum' align='center'>");
+        var oInput5 = new sap.ui.commons.Label();
+        oInput5.setText("total: "+ oControl.getSum());
+        oInput5.setWrapping(true);
+        oInput5.setTextAlign(sap.ui.core.TextAlign.Center);
+        oRm.renderControl(oInput5);  
+        oRm.write("</div>");
+
+
+        oRm.write("<div class='logisticTrack' align='center'>");
+        var oInput5 = new sap.ui.commons.Label();
+        oInput5.setText("On Delivery");
+        oInput5.setWrapping(true);
+        oInput5.setTextAlign(sap.ui.core.TextAlign.Center);
+        oRm.renderControl(oInput5);  
+        oRm.write("</div>");
+
+        oRm.write("</div>");
+
+        oRm.write("<div");
+        oRm.addClass("note");
+        oRm.writeClasses();
+        oRm.addStyle("border-right","1px solid  #E0FFFF");
+
+        oRm.addStyle("border-left","1px solid   #E0FFFF");
+        oRm.addStyle("border-bottom","1px solid #E0FFFF");
+        oRm.addStyle("width","149px");
+        oRm.addStyle("height",((oControl.getNumber()-1)*1 + oControl.getNumber()*100).toString()+"px");
+        oRm.addStyle("float","left");   
+        oRm.writeStyles();
+        oRm.write(">");
+
+        oRm.write("<div class='confirmReceive' align='center'>");
+        oRm.renderControl(oControl.getButtonCheck()[0]); 
+        oRm.write("</div>");
+
+
+        oRm.write("</div>");
+
+        oRm.write("</div>");
+    }
+});
+
+
+var oOrder1 = new order({
+    number: 2,
+    orderID:"Order2810281280912",
+    vendorName:"Tennis WH",
+    vendorID:"TWH1820112",
+    orderDate:"2015-3-12",
+    sum: "100 Euro",
+    items : [
+            new CustListItem({article:"WILSON TENNISSCHLÄGER BLADE 98S 18X16 (2015)", additionalText:"Der Blade 98s überzeugt durch sein leichteres Gewicht und die Spin Effect Technologie. Von allen neuen Blade Modellen weist er Blade 98S die beste Ballbeschleunigung auf.", price: 4.00, num: 3}),
+            new CustListItem({article:"NIKE TRAININGSJACKE ROGER FEDERER PREMIER JACKET", additionalText:"Royal im Blut! Das Nike Premier RF Jacket eifert dem unumstrittenen Tenniskönig aus der Schweiz nach. ", price: 9.00, num: 3}),
+           ]
+});
+
+
+
+var oOrder2 = new order({
+    number: 2,
+    orderID:"Order2323232",
+    vendorName:"Tennis EWH",
+    vendorID:"TWEH21212122",
+    orderDate:"2015-3-14",
+    sum: "50 Euro",
+    items : [
+            new CustListItem({article:"WILSON TENNISSCHLÄGER BLADE 98S 18X16 (2015)", additionalText:"Der Blade 98s überzeugt durch sein leichteres Gewicht und die Spin Effect Technologie. Von allen neuen Blade Modellen weist er Blade 98S die beste Ballbeschleunigung auf.", price: 4.00, num: 3}),
+            new CustListItem({article:"NIKE TRAININGSJACKE ROGER FEDERER PREMIER JACKET", additionalText:"Royal im Blut! Das Nike Premier RF Jacket eifert dem unumstrittenen Tenniskönig aus der Schweiz nach. ", price: 9.00, num: 3}),
+            ]
+});
+
+
+
+//oOrder1.placeAt("ctrRoot");
+//oOrder2.placeAt("ctrRoot");
+
+
+
+
+sap.ui.core.Control.extend("counter",{
+    metadata:{
+        properties:{
+            "size": {type:"sap.ui.core.CSSSize", defaultValue:"20px"},
+            "value": {type:"string", defaultValue:"5"}
+
+        }        
+    },
+
+    renderer : function(oRm, oControl) { // static function, so use the given "oControl" instance 
+                                           // instead of "this" in the renderer function
+          oRm.write("<div"); 
+          oRm.writeControlData(oControl);  // writes the Control ID and enables event handling - important!
+          oRm.addClass("counter");        // add a CSS class for styles common to all Control instances
+          oRm.writeClasses();           // this call writes the above class plus enables support 
+          oRm.write(">");
+
+          oRm.write("<div");
+          oRm.addClass("minus");          
+          oRm.writeClasses();
+          oRm.addStyle("position","relative");
+          oRm.addStyle("float","left");
+          oRm.addStyle("cursor","pointer");
+          oRm.writeStyles();
+          oRm.write(">");
+          oRm.write("-");
+          oRm.write("</div>");
+
+          oRm.write("<div");
+          oRm.writeAttribute("contentEditable",true);
+          oRm.addStyle("border","1px solid gray");
+          oRm.addStyle("width",oControl.getSize());
+          oRm.addStyle("height",oControl.getSize());
+          oRm.addStyle("position","relative");
+          oRm.addStyle("margin-left","5px");
+          oRm.addStyle("margin-right","5px");
+          oRm.addStyle("padding","1px");
+          oRm.addStyle("float","left");
+          oRm.writeStyles();
+          oRm.addClass("numContainer");
+          oRm.writeClasses();
+          oRm.write(">");
+          oRm.write(oControl.getValue());
+          oRm.write("</div>");
+
+          oRm.write("<div");
+          oRm.addClass("plus");
+          oRm.writeClasses();
+          oRm.addStyle("cursor","pointer");
+          oRm.addStyle("position","relative");
+          oRm.addStyle("float","left");
+          oRm.writeStyles();
+          oRm.write(">");
+          oRm.write("+");
+          oRm.write("</div>");
+          oRm.write("</div>");
+      },
+
+      onAfterRendering: function(oRm, oControl){
+        var ctrl = this;
+        var id = ctrl.getId();
+        $("#"+id+" .minus").click(function(){
+            if(ctrl.getValue()>0){
+                var newVal = parseInt(ctrl.getValue()) - 1;
+                ctrl.setValue(newVal);
+                $("#"+id+" .numContainer").html(newVal);  
+            }
+        });
+
+        $("#"+id+" .plus").click(function(){
+            
+                var newVal = parseInt(ctrl.getValue()) + 1;
+                ctrl.setValue(newVal);
+                $("#"+id+" .numContainer").html(newVal);   
+            
+        });
+
+        $("#"+id+" .numContainer").focusout(function(){
+            ctrl.setValue($(this).html());
+        })
+
+      }
+});
+
+
+
+
+
+//Initialize the Dataset and the layouts
+function createTemplate(){
+    var c = sap.ui.commons;
+
+    
+    var icon = new CartIcon({
+        item:"{title}",
+        price:"{price}",
+        src: sap.ui.core.IconPool.getIconURI("cart"),
+        size: "20px",
+        color: "orange",
+        hoverColor: "blue",
+       
+    });
+
+
+    var oItem =  new ItemLayout({
+        link: new c.Link({text: "{title}"}),
+        image: new c.Image({src:"images/Notebook.png"}),     
+        form: new c.form.Form({
+            width: "100%",
+            layout: new c.form.GridLayout(),
+            formContainers: [
+                new c.form.FormContainer({
+                    formElements: [
+                        new c.form.FormElement({
+                            label: new c.Label({
+                                text: "Category",
+                                layoutData: new c.form.GridElementData({hCells: "5"})}),
+                                
+                            fields: [new c.TextField({value: "{category}", editable: false})]
+                        }),
+                        new c.form.FormElement({
+                            label: new c.Label({text: "Price", layoutData: new c.form.GridElementData({hCells: "5"})}),
+                            fields: [new c.TextField({value: "{price}", editable: false})]
+                        }),
+                        new c.form.FormElement({
+                            label: new c.Label({text: "Rating", layoutData: new c.form.GridElementData({hCells: "5"})}),
+                            fields: [new c.RatingIndicator({value: "{rating}", editable: false})]
+                        }),
+
+                        new c.form.FormElement({       
+                            label: new sap.m.Label({layoutData: new sap.ui.commons.form.GridElementData({hCells: "5"})}),
+                            fields: [icon
+                            ],
+
+                            
+                        })                  
+
+                    ]
+                        })
+                    ]
+                })
+            
+        });
+    return oItem;
+}
+
+
+var oModel = new sap.ui.model.json.JSONModel();
+oModel.setData({oTab1Data:oTab1Data});
+var oDataSet = new sap.ui.ux3.DataSet({
+    items: {
+        path: "/oTab1Data",
+        template: new sap.ui.ux3.DataSetItem({
+            title : "{title}",
+            iconSrc :"{image}"
+        })
+    },
+    views: [
+        new sap.ui.ux3.DataSetSimpleView({
+            name: "Floating, responsive View",
+            icon: "images/tiles2_hover.png",
+            floating: true,
+            responsive: true,
+            itemMinWidth: 300,
+            template: createTemplate()
+        }),
+
+        new sap.ui.ux3.DataSetSimpleView({
+            name: "Floating, non-responsive View",
+            icon:"images/list_hover.png",
+            floating: true,
+            responsive: false,
+            itemMinWidth: 0,
+            template: createTemplate()
+        })
+    ],
+
+    layoutData : new sap.ui.layout.GridData({
+        span : "L12 M12 S12"
+    }),
+
+    search: function search(oEvent) {
+        var sQuery = oEvent.getParameter("query");
+        var oBinding = oDataSet.getBinding("items");
+        oBinding.filter(!sQuery ? [] : [new sap.ui.model.Filter("title", sap.ui.model.FilterOperator.Contains, sQuery)]);
+        oDataSet.setLeadSelection(-1);
+    },
+    selectionChanged: function search(oEvent) {
+        //var idx = oEvent.getParameter("newLeadSelectedIndex");
+        //alert("Product '"+oDataSet.getItems()[idx].getTitle()+"' selected.'");
+    }
+});
+
+
+oDataSet.setModel(oModel);
+
+var label = new sap.ui.commons.Label("noOrderLabel",{text:"no Order found"});
+
+var oTabStrip = new sap.ui.commons.TabStrip({
+                        layoutData : new sap.ui.layout.GridData({
+                                span : "L12 M12 S12"
+                            }),
+
+                        select: function(oControlEvent){
+                            
+                            if(oControlEvent.getParameters().index == 2){
+                                if(!shoppingCartData.length){
+                                    oOrderTab.createRow(label);
+                                }else{
+                                    oOrderTab.removeAllRows();
+                                    for(var i=0; i<oOrders.length; i++){
+                                        oOrderTab.createRow(oOrders[i]);
+                                    }
+                                }
+                            }
+                        }
+                        
+                    });
+oTabStrip.createTab("Tennis Schlaeger",oDataSet);
+
+
+
+var aClothing = ["Nike Hybrid RF","Adidas","Head","Prince","Babolat"];
+var aPricing = ["100 $","90 $","80 $","80 $","100 $"];
+
+var clothingData =[];
+for (var i=0; i<aClothing.length; i++){
+    var cloth={};
+    cloth.title = aClothing[i];
+    cloth.price = aPricing[i];
+    clothingData.push(cloth);
+}
+
+
+
+var oModel = new sap.ui.model.json.JSONModel();
+oModel.setData({oClothingData:clothingData});
+
+function clothingTemplate(){
+    var c = sap.ui.layout;
+    return  new c.form.Form({
+            width: "100%",
+            layout: new c.form.GridLayout(),
+            title: "{title}",
+            formContainers: [
+                new c.form.FormContainer({
+                    formElements: [
+                        new c.form.FormElement({
+                            label: new sap.m.Label({text: "Price", layoutData: new sap.ui.commons.form.GridElementData({hCells: "5"})}),
+                            fields: [new sap.ui.commons.TextField({value: "{price}", editable: false})]
+                        }),
+                        new c.form.FormElement({       
+                            label: new sap.m.Label({layoutData: new sap.ui.commons.form.GridElementData({hCells: "5"})}),
+                            fields: [new CartIcon({
+                                item:"{title}",
+                                price:"{price}",
+                                src: sap.ui.core.IconPool.getIconURI("cart"),
+                                size: "20px",
+                                color: "orange",
+                                hoverColor: "blue",
+
+                            })]
+                        })
+                    ]
+                })
+            ]
+        })
+}
+
+var oClothDataSet = new sap.ui.ux3.DataSet({
+    items: {
+        path: "/oClothingData",
+        template: new sap.ui.ux3.DataSetItem({
+            title : "{title}"
+        })
+    },
+    views: [
+        new sap.ui.ux3.DataSetSimpleView({
+            name: "Floating, responsive View",
+            icon: "images/tiles2_hover.png",
+            floating: true,
+            responsive: true,
+            itemMinWidth: 300,
+            template: clothingTemplate()
+        }),
+
+        new sap.ui.ux3.DataSetSimpleView({
+            name: "Floating, non-responsive View",
+            icon:"images/list_hover.png",
+            floating: true,
+            responsive: false,
+            itemMinWidth: 0,
+            template: clothingTemplate()
+        })
+    ],
+
+    layoutData : new sap.ui.layout.GridData({
+        span : "L12 M12 S12"
+    }),
+
+    search: function search(oEvent) {
+        var sQuery = oEvent.getParameter("query");
+        var oBinding = oDataSet.getBinding("items");
+        oBinding.filter(!sQuery ? [] : [new sap.ui.model.Filter("title", sap.ui.model.FilterOperator.Contains, sQuery)]);
+        oDataSet.setLeadSelection(-1);
+    },
+    selectionChanged: function search(oEvent) {
+        //var idx = oEvent.getParameter("newLeadSelectedIndex");
+        //alert("Product '"+oDataSet.getItems()[idx].getTitle()+"' selected.'");
+    }
+});
+
+oClothDataSet.setModel(oModel);
+
+oTabStrip.createTab("Tennis Bekleidung", oClothDataSet);
+
+var oOrderTab = new sap.ui.commons.layout.MatrixLayout();
+
+oTabStrip.createTab("Ordering",oOrderTab);
+
+
+
+
+
+var step1 = new sap.ui.commons.RoadMapStep("step1",{label:"Shopping Cart Confirmation"});
+var step2 = new sap.ui.commons.RoadMapStep("step2",{label:"Delivery Information", enabled: false});
+var step3 = new sap.ui.commons.RoadMapStep("step3",{label:"Payment",enabled: false});
+var step4 = new sap.ui.commons.RoadMapStep("step4",{label:"Confirmation",enabled: false});
+
+var roadMap = new sap.ui.commons.RoadMap("rd",{
+                        numberOfVisibleSteps:4,
+                        selectedStep: "step1",
+                        steps:[
+                            step1,
+                            step2,
+                            step3,
+                            step4
+                        ],
+                        layoutData : new sap.ui.layout.GridData({
+                                span : "L6 M10 S12"
+                            })
+                    });
+
+
+
+
+var oShoppingCartTable= new sap.ui.table.Table({
+    title: "Shopping Cart",
+    visibleRowCount:5,
+    layoutData : new sap.ui.layout.GridData({
+                                span : "L12 M12 S12"
+                            }),
+    columns:[
+       new sap.ui.table.Column({
+        label: new sap.ui.commons.Label({text: "Item"}),
+        editable:false,
+        sortProperty: "item",
+        filterProperty:"item",
+        autoResizable: true,
+        template: new sap.ui.commons.TextField({value:"{item}",editable:false})
+       }),
+
+       new sap.ui.table.Column({
+        label: new sap.ui.commons.Label({text: "Price"}),
+        editable:false,
+        sortProperty: "item",
+        filterProperty:"item",
+        autoResizable: true,
+        template: new sap.ui.commons.TextField({value:"{price}",editable:false})
+       }),
+
+       new sap.ui.table.Column({
+        label: new sap.ui.commons.Label({text: "Num"}),
+                
+        autoResizable: true,
+        template: new counter({value:1})
+       })
+
+    ]
+});
+
+var oModel = new sap.ui.model.json.JSONModel();
+oModel.setData({oShoppingCartData:shoppingCart});
+
+oShoppingCartTable.setModel(oModel);
+oShoppingCartTable.bindRows("/oShoppingCartData");
+
+
+var oModel = new sap.ui.model.json.JSONModel();
+oModel.setData({
+    dateValue: new Date()
+});
+sap.ui.getCore().setModel(oModel);
+
+var deliveryInfo = new sap.ui.layout.form.Form("F1",{
+            title: new sap.ui.core.Title({text: "Address Data"}),
+            width: "100%",
+           
+            layout:  new sap.ui.layout.form.ResponsiveGridLayout(),
+            layoutData : new sap.ui.layout.GridData({
+                                span : "L6 M12 S12"
+                            }),
+            formContainers: [
+                new sap.ui.layout.form.FormContainer("C1",{
+                    formElements: [
+                        new sap.ui.layout.form.FormElement({
+                            label: new sap.ui.commons.Label({text: "Name", layoutData: new sap.ui.layout.form.GridElementData({hCells: "2"})}),
+                            fields: [new sap.ui.commons.TextField({layoutData: new sap.ui.layout.form.GridElementData({hCells: "3"})}),
+                                    new sap.ui.commons.TextField({layoutData: new sap.ui.layout.form.GridElementData({hCells: "auto"})})
+                            ]
+                        }),
+
+
+                       
+                        new sap.ui.layout.form.FormElement({
+                            label: new sap.ui.commons.Label({text: "Street / Number", layoutData: new sap.ui.layout.form.GridElementData({hCells: "2"})}),
+                            fields: [new sap.ui.commons.TextField({layoutData: new sap.ui.layout.form.GridElementData({hCells: "auto"})}),
+                                    new sap.ui.commons.TextField({layoutData: new sap.ui.layout.form.GridElementData({hCells: "1"})})
+                            ]
+                        }),
+                        
+                        new sap.ui.layout.form.FormElement({
+                            label: new sap.ui.commons.Label({text: "Zip Code / City", layoutData: new sap.ui.layout.form.GridElementData({hCells: "2"})}),
+                            fields: [new sap.ui.commons.TextField({layoutData: new sap.ui.layout.form.GridElementData({hCells: "2"})}),
+                                    new sap.ui.commons.TextField({layoutData: new sap.ui.layout.form.GridElementData({hCells: "auto"})})
+                            ]
+                        }),
+                        
+                        new sap.ui.layout.form.FormElement({
+                            label: new sap.ui.commons.Label({text: "Country", layoutData: new sap.ui.layout.form.GridElementData({hCells: "2"})}),
+                            fields: [new sap.ui.commons.TextField({layoutData: new sap.ui.layout.form.GridElementData({hCells: "auto"})})
+                            ]
+                        }),
+                       
+                        new sap.ui.layout.form.FormElement({
+                            label: new sap.ui.commons.Label({text: "Phone Number", layoutData: new sap.ui.layout.form.GridElementData({hCells: "2"})}),
+                            fields: [new sap.ui.commons.TextField({layoutData: new sap.ui.layout.form.GridElementData({hCells: "1"})}),
+                                    new sap.ui.commons.TextField({layoutData: new sap.ui.layout.form.GridElementData({hCells: "2"})}),
+                                    new sap.ui.commons.TextField({layoutData: new sap.ui.layout.form.GridElementData({hCells: "2"})})
+                            ]
+                        }),
+
+                        new sap.ui.layout.form.FormElement({
+                            label: new sap.ui.commons.Label({text:"Delivery Date"}),
+                            fields:[
+                                new sap.ui.commons.DatePicker({value: {
+                                path: "/dateValue",
+                                type: new sap.ui.model.type.Date({pattern: "yyyy-MM-dd", strictParsing: true})}})
+                            ]
+                        })
+                       
+                    ]
+                })
+            ]
+        });
+
+var shoppingCartData = {};
+var getShoppingCartData = function(){ 
+    shoppingCartData = [];
+    var rowLength = oShoppingCartTable.getRows().length;
+    for(var i=0; i<rowLength; i++){
+       var item =oShoppingCartTable.getRows()[i].getCells()[0].getValue();
+       if (item==""){break;}
+       var price = oShoppingCartTable.getRows()[i].getCells()[1].getValue();
+
+       var num = oShoppingCartTable.getRows()[i].getCells()[2].getValue();
+
+       var product = [];
+       product.item = item;
+       product.price = price;
+       product.num = num;
+       shoppingCartData.push(product);        
+    }
+}
+
+var oOrder;
+var oOrders = [];
+
+
+var oGridForm = new sap.ui.layout.Grid({
+                hSpacing: 1,
+                vSpacing: 1,    
+                content: [
+                    new sap.ui.commons.ApplicationHeader("appHeader",{
+                        logoSrc: "http://www.sap.com/global/images/SAPLogo.gif",
+                        logoText: "Tennis Club Management System",
+                        displayLogoff: true,
+                        userName: "admin",
+                        displayWelcome: true,
+                        layoutData : new sap.ui.layout.GridData({
+                                span : "L12 M12 S12"
+                            })
+                    }),  
+
+
+                    
+                    oTabStrip,
+                    roadMap,
+                    
+
+                    
+                     
+                     new sap.ui.commons.Button("previousBtn",{
+                        text:"previous",
+                        layoutData : new sap.ui.layout.GridData({
+                                span : "L1 M3 S6"
+                            }),
+                        enabled:false,
+                        press: function(){
+                            if(this.getEnabled()){
+                                if(roadMap.getSelectedStep()==="step2"){
+                                    oGridForm.addContent(oShoppingCartTable);
+                                    this.setEnabled(false);
+                                    step1.setEnabled(true);
+                                    step2.setEnabled(false);
+                                    oGridForm.removeContent(deliveryInfo);
+                                    oGridForm.removeContent(oOrder);
+                                    roadMap.setSelectedStep("step1");
+                                }else if(roadMap.getSelectedStep()==="step3"){
+                                    step3.setEnabled(false);
+                                    step2.setEnabled(true);
+                                    roadMap.setSelectedStep("step2");
+                                }else if(roadMap.getSelectedStep()==="step4"){
+                                    step4.setEnabled(false);
+                                    step3.setEnabled(true);
+                                    roadMap.setSelectedStep("step3");
+                                }
+                            }
+                        }
+                    }),
+                     new sap.ui.commons.Button("nextBtn",{
+                        text:"next",
+                        layoutData : new sap.ui.layout.GridData({
+                                span : "L1 M3 S6"
+                            }),
+                        enabled:false,
+                        press: function(){
+                            if(this.getEnabled()){
+                                
+                                if(roadMap.getSelectedStep()==="step1"){
+                                    step1.setEnabled(false);
+                                    step2.setEnabled(true);
+                                    roadMap.setSelectedStep("step2");
+                                    sap.ui.getCore().byId("previousBtn").setEnabled(true);      
+                                    getShoppingCartData();                              
+                                    oGridForm.removeContent(oShoppingCartTable);
+                                    
+
+                                    oOrder = new order({
+                                            number: shoppingCartData.length,
+                                            orderID:"Order",
+                                            vendorName:"Tennis EWH",
+                                            vendorID:"TWEH21212122",
+                                            orderDate:"2015-3-14",
+                                            sum: "",
+                                            buttonCheck: new sap.ui.commons.Button({
+                                                text: "Confirm Receiving",
+                                                style: sap.ui.commons.ButtonStyle.Emph,
+                                                press: function(){
+
+                                                    confirmReceive();
+                                                    
+                                                }
+
+                                            }),
+        
+                                            layoutData : new sap.ui.layout.GridData({
+                                                            span : "L12 M12 S12"
+                                                        })
+                                        }); 
+
+                                    function confirmReceive(){
+                                            var oDialog1 = new sap.ui.commons.Dialog();
+                                            oDialog1.setTitle("Warning");
+                                            var oText = new sap.ui.commons.TextView({text: "This operation is irreversible"});
+                                            oDialog1.addContent(oText);
+                                            oDialog1.addButton(new sap.ui.commons.Button({text: "Cancel", press:function(){oDialog1.close();}}));
+                                            oDialog1.addButton(new sap.ui.commons.Button({text: "OK", press:function(){
+                                                    var index = oOrders.indexOf(oOrder);
+                                                    oOrders.splice(index,1);
+                                                    oOrderTab.removeAllRows();
+                                                    for(var i=0; i<oOrders.length;i++){
+                                                        oOrderTab.createRow(oOrders[i]);
+                                                    }
+                                                    oDialog1.close();
+                                            }}));
+                                            oDialog1.open();
+                                    };
+                                    
+                                    var sum = 0;
+                                    
+                                    for(var i=0; i<shoppingCartData.length;i++){
+                                        var item = new CustListItem({article:shoppingCartData[i].item, additionalText:"This is the additional text which describes the article in detail", price: shoppingCartData[i].price, num: shoppingCartData[i].num});
+                                        sum = sum + parseFloat(shoppingCartData[i].price)*parseInt(shoppingCartData[i].num);
+                                        oOrder.addItem(item);
+                                    }
+
+                                    oOrder.getButtonCheck()[0].setEnabled(false);
+
+                                    oOrder.setSum(sum+" $");
+                                    oGridForm.addContent(oOrder);
+                                    oGridForm.addContent(deliveryInfo);
+
+                                }
+
+                                else if(roadMap.getSelectedStep()==="step2"){
+                                    step2.setEnabled(false);
+                                    step3.setEnabled(true);
+                                    roadMap.setSelectedStep("step3");                                   
+
+
+                                   
+                                }
+                                else if(roadMap.getSelectedStep()==="step3"){
+                                    step3.setEnabled(false);
+                                    step4.setEnabled(true);
+                                    roadMap.setSelectedStep("step4");
+
+                                    
+                                      oShoppingCartTable.bindRows("");
+                                        oShoppingCartTable.rerender();
+                                        oOrder.getButtonCheck()[0].setEnabled(true);
+
+                                    oOrders.push(oOrder);    
+                                    
+                                    oOrderTab.createRow(oOrder);
+
+                                    $("#"+oTabStrip.getTabs()[2].getId()).click();
+                                    //oTabStrip.setSelectedIndex(2);
+                                    
+
+                                    window.scroll(0,0);
+
+                                    step4.setEnabled(false);
+                                    step1.setEnabled(true);
+                                    roadMap.setSelectedStep("step1");
+                                    oGridForm.removeContent(deliveryInfo);
+                                    oGridForm.addContent(oShoppingCartTable);
+                                    this.setEnabled(false);
+                                    sap.ui.getCore().byId("previousBtn").setEnabled(false);
+
+                                    shoppingCart=[];
+                                   
+                                }
+                                
+                            }
+                        }
+                    }),
+
+                     oShoppingCartTable
+
+                   
+               
+                ]
+            });
+
+
+
+
+
+
+oGridForm.placeAt("ctrRoot");
+
+
+    
+
+        
+      
+			
+		</script>
+	</head>
+	<body class="sapUiBody" role="application">
+		<div id="ctrRoot"></div>
+        
+       
+	</body>
+</html>
